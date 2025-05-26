@@ -16,6 +16,18 @@
             </label>
         </div>
         <br>
+        <template x-if="dupes.length > 0">
+            <div class="dupewarn">
+                The following words have matching sets of letters. Anagram methods will not be able to differentiate them:
+                <ul>
+                    <template x-for="dupelist in dupes">
+                        <li>
+                            <span x-text="dupelist.join(', ')"></span>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </template>
         <label>
             <input type="checkbox" x-model="hideBad" @change="calcSums(startNode, true)">
             Hide letters that will increase the maximum number of guesses
@@ -135,6 +147,10 @@
         <a :href="permaLink" x-text="permaLink"></a>
     </div>
     <script>
+        function usedLetters(word) {
+            const letters = new Set(word.toUpperCase().replace(/[^A-Z]/g, '').split(''))
+            return Array.from(letters).sort().join('')
+        }
         class TNode {
             constructor(words, level, css) {
                 this.css = css
@@ -159,6 +175,7 @@
                 lastCalculated: [],
                 letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
                 levels: [],
+                dupes: [],
                 gridList: [],
                 isVertical: true,
                 nosFirst: true,
@@ -208,10 +225,27 @@
                     if (crammedWord !== this.lastBoxCalculated) {
                         this.lastBoxCalculated = crammedWord
                         this.startNode.words = words.map(word => word.orig)
+                        this.checkDeadEnds()
                         this.calcSums(this.startNode)
                         this.deselectLetter(this.startNode)
                         this.recalcTree()
                     }
+                },
+                checkDeadEnds() {
+                    const checkers = this.startNode.words.map(word => ({ orig: word, letters: usedLetters(word) })).sort(({ letters: a }, { letters: b}) => a < b ? -1 : a > b ? 1 : 0)
+                    const seen = new Set()
+                    const dupeSet = new Set()
+                    this.dupes = [];
+                    checkers.forEach(({letters, orig}) => {
+                        if (seen.has(letters)) {
+                            dupeSet.add(letters)
+                        } else {
+                            seen.add(letters)
+                        }
+                    })
+                    dupeSet.forEach(letters => {
+                        this.dupes.push(checkers.filter(word => word.letters === letters).map(word => word.orig))
+                    })
                 },
                 calcSums(node, recurse) {
                     node.matrix = node.words.map(word => this.letters.map(c => word.toUpperCase().includes(c) ? 1 : 0))
