@@ -14,6 +14,13 @@ table { border-collapse: collapse; border: 1px solid; }
 .picker { margin: 0.5em; }
 .gridclicky { place-content: center; padding: 1em; }
 .pickersum { font-weight: normal; }
+.dupewarn {
+    border: 2px solid red;
+    margin-bottom: 1em;
+}
+.dupewarn li {
+    font-weight: bold;
+}
 th.pickercol, td.pickercol {
     cursor: pointer;
     width: 1em;
