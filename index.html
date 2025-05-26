@@ -177,7 +177,7 @@
         Concept credit: Andy <span style="font-style: italic; font-size: small">(but if you didn't already know that, then I don't know how you got here...)</span>
     </footer>
     <script>
-        let wordsKeyed = {}
+        // Gaze not into this abyss. This is mostly a one-and-a-half day hack job, not a professional, clean codebase ;)
         class TNode {
             constructor(words, level, css) {
                 this.css = css
@@ -195,11 +195,10 @@
         }
         document.addEventListener('alpine:init', () => {
             Alpine.data('main', () => ({
-                // wordBox: "test\ndata\nfoo\nwoo\nhappy\ncoal",
+                wordsKeyed: {},
                 wordBox: "",
                 listLength: 1,
                 lastBoxCalculated: "",
-                lastCalculated: [],
                 letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
                 levels: [],
                 dupes: [],
@@ -251,9 +250,9 @@
                     this.listLength = this.wordBox.replace(/[^\n]/g,'').length + 2
                     const crammedWord = words.map(word => word.check).join(",")
                     if (crammedWord !== this.lastBoxCalculated) {
-                        wordsKeyed = {}
+                        this.wordsKeyed = {}
                         words.forEach(word => {
-                            wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
+                            this.wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
                         })
                         this.lastBoxCalculated = crammedWord
                         this.startNode.words = words.map(word => word.orig)
@@ -264,7 +263,7 @@
                     }
                 },
                 checkDeadEnds() {
-                    const checkers = this.startNode.words.map(word => ({ orig: word, letters: wordsKeyed[word] })).sort(({ letters: a }, { letters: b}) => a < b ? -1 : a > b ? 1 : 0)
+                    const checkers = this.startNode.words.map(word => ({ orig: word, letters: this.wordsKeyed[word] })).sort(({ letters: a }, { letters: b}) => a < b ? -1 : a > b ? 1 : 0)
                     const seen = new Set()
                     const dupeSet = new Set()
                     this.dupes = [];
@@ -290,7 +289,7 @@
                     return count + this.partialDeadEndCount(node.noNode) + this.partialDeadEndCount(node.yesNode)
                 },
                 calcSums(node, recurse) {
-                    node.matrix = node.words.map(word => this.letters.map(c => wordsKeyed[word].includes(c) ? 1 : 0))
+                    node.matrix = node.words.map(word => this.letters.map(c => this.wordsKeyed[word].includes(c) ? 1 : 0))
                     if (node.words.length > 0) {
                         node.sums = node.matrix.reduce((prev, curr) => {
                             return curr.map((v, idx) => {
