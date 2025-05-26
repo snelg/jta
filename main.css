@@ -1,0 +1,36 @@
+body{
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+}
+th, td { border: 1px solid; vertical-align: top; }
+table { border-collapse: collapse; border: 1px solid; }
+.hidecol { display: none; }
+.clicky { cursor: pointer; font-weight: bold; text-align: center; }
+.yesnode { background-color: #ccffcc; }
+.nonode { background-color: #ffcccc; }
+.targetword { padding: 0 0.5em; }
+.yaybox { border: 1px solid #888; justify-content: center; align-content: center; }
+.gridwrap { display:inline-grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr); border: 1px solid; }
+.picker { margin: 0.5em; }
+.gridclicky { place-content: center; padding: 1em; }
+.pickersum { font-weight: normal; }
+th.pickercol, td.pickercol {
+    cursor: pointer;
+    width: 1em;
+    text-align: center;
+}
+.pickercol.hovering {
+    background-color: #ffa;
+}
+.warning {
+    background-color: rgba(0,0,0,0.2);
+}
+.best {
+    /* Hmm, can't figure out a clean visual indicator for now ... */
+    /*background-color: #dfd;*/
+}
+@media print {
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
