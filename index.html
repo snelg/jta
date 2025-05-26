@@ -17,18 +17,21 @@
         </div>
         <br>
         <label>
+            <input type="checkbox" x-model="hideBad" @change="calcSums(startNode, true)">
+            Hide letters that will increase the maximum number of guesses
+        </label>
+        <br>
+        <label>
             <input type="checkbox" x-model="isVertical">
             Vertical
         </label>
         <br>
         <label>
-            <input type="checkbox" x-model="nosFirst" @change="recalcTree()">
-            "No"s first
+            <input type="radio" x-model="nosFirst" value="true" @input="recalcTree()"> "No" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
         </label>
         <br>
         <label>
-            <input type="checkbox" x-model="hideBad" @change="calcSums(startNode, true)">
-            Hide "bad" options (i.e. letters that will increase the minimum number of guesses)
+            <input type="radio" x-model="nosFirst" value="" @input="recalcTree()"> "Yes" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
         </label>
         <br>
         <br>
@@ -66,7 +69,7 @@
                                     </td>
                                 </template>
                                 <template x-if="node.deadEnd && index === 0">
-                                    <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fbc;">
+                                    <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
                                         <strong>DEAD END</strong>
                                     </td>
                                 </template>
@@ -171,6 +174,7 @@
                         const pickPieces = picks.toUpperCase().replace(/[^A-Z.]/g, '').split('')
                         this.deserializePicks(this.startNode, pickPieces)
                     }
+                    this.$watch('nosFirst', () => this.recalcTree())
                 },
                 deserializePicks(node, picked) {
                     if (picked.length === 0 || node.words.length < 2) {
