@@ -1,6 +1,37 @@
-body{
+@media (min-width: 576px) {
+    body {
+        max-width: 510px;
+        padding-right: 0;
+        padding-left: 0;
+    }
+}
+@media (min-width: 768px) {
+    body {
+        max-width: 700px;
+    }
+}
+@media (min-width: 1024px) {
+    body {
+        max-width: 950px;
+    }
+}
+@media (min-width: 1280px) {
+    body {
+        max-width: 1200px;
+    }
+}
+@media (min-width: 1536px) {
+    body {
+        max-width: 1450px;
+    }
+}
+body {
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
+    font-family: sans-serif;
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
 }
 th, td { border: 1px solid; vertical-align: top; }
 table { border-collapse: collapse; border: 1px solid; }
@@ -15,6 +46,7 @@ table { border-collapse: collapse; border: 1px solid; }
 .picker { margin: 0.5em; }
 .gridclicky { place-content: center; padding: 1em; }
 .pickersum { font-weight: normal; }
+.wordhere { padding-left: 0.5em; }
 .dupewarn {
     border: 2px solid red;
     margin-bottom: 1em;
