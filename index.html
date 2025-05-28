@@ -51,7 +51,7 @@
     <div x-show="isVertical">
         <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
             <template x-for="node in gridList">
-                <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.rowspan + ';'" @click="deselectLetter(node)">
+                <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
                     <div x-show="node.chosenLetter">
                         <span x-text="node.chosenLetter"></span>
                     </div>
@@ -98,7 +98,7 @@
             <template x-for="level in levels">
                 <tr>
                     <template x-for="node in level">
-                        <td :colspan="node.leaves" :rowspan="node.rowspan" :class="node.css">
+                        <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css">
                             <div x-show="node.chosenLetter" x-text="node.chosenLetter" @click="deselectLetter(node)" class="clicky"></div>
                             <span x-show="!node.chosenLetter && node.words.length <= 1" x-text="node.words[0]" class="targetword"></span>
                             <table x-show="!node.chosenLetter && node.words.length > 1" class="picker" x-data="{ hindex: -1 }">
@@ -160,7 +160,7 @@
                 this.sums = []
                 this.colors = []
                 this.level = level
-                this.rowspan = 1
+                this.breadth = 1
                 this.deadEnd = false
             }
         }
@@ -326,10 +326,10 @@
                     this.levelCount = 0
                     this.levels = []
                     this.gridList = []
-                    this.calcTree(this.startNode)
-                    this.setRowspan(this.startNode)
+                    this.calcGridDimensions(this.startNode)
+                    this.setBreadth(this.startNode)
                 },
-                calcTree(node) {
+                calcGridDimensions(node) {
                     if (!node) {
                         return 0
                     }
@@ -342,11 +342,11 @@
                     if (node.chosenLetter) {
                         let noLeaves, yesLeaves
                         if (this.nosFirst) {
-                            noLeaves = this.calcTree(node.noNode)
-                            yesLeaves = this.calcTree(node.yesNode)
+                            noLeaves = this.calcGridDimensions(node.noNode)
+                            yesLeaves = this.calcGridDimensions(node.yesNode)
                         } else {
-                            yesLeaves = this.calcTree(node.yesNode)
-                            noLeaves = this.calcTree(node.noNode)
+                            yesLeaves = this.calcGridDimensions(node.yesNode)
+                            noLeaves = this.calcGridDimensions(node.noNode)
                         }
                         node.leaves = noLeaves + yesLeaves
                     } else {
@@ -354,13 +354,13 @@
                     }
                     return node.leaves
                 },
-                setRowspan(node) {
+                setBreadth(node) {
                     if (!node) {
                         return
                     }
-                    node.rowspan = node.chosenLetter ? 1 : this.levelCount - node.level
-                    this.setRowspan(node.noNode)
-                    this.setRowspan(node.yesNode)
+                    node.breadth = node.chosenLetter ? 1 : this.levelCount - node.level
+                    this.setBreadth(node.noNode)
+                    this.setBreadth(node.yesNode)
                 },
                 permaLink() {
                     const url = new URL(window.location)
