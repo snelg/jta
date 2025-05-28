@@ -232,7 +232,7 @@
                             wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
                         })
                         this.lastBoxCalculated = crammedWord
-                        this.startNode = new TNode(words.map(word => word.orig), 0)
+                        this.startNode.words = words.map(word => word.orig)
                         this.checkDeadEnds()
                         this.calcSums(this.startNode)
                         this.deselectLetter(this.startNode)
