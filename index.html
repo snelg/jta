@@ -147,10 +147,8 @@
         <a :href="permaLink" x-text="permaLink"></a>
     </div>
     <script>
-        function usedLetters(word) {
-            const letters = new Set(word.toUpperCase().replace(/[^A-Z]/g, '').split(''))
-            return Array.from(letters).sort().join('')
-        }
+        const splitPointsLookup = {}
+        let wordsKeyed = {}
         class TNode {
             constructor(words, level, css) {
                 this.css = css
@@ -182,6 +180,12 @@
                 hideBad: true,
                 startNode: new TNode([], 0),
                 init () {
+                    for (let i = 1; i <= 128; i++) {
+                        const minbest = Math.floor(i / 2)
+                        const maxbest = Math.ceil(i / 2)
+                        const minsplit = Math.pow(2, (Math.ceil(Math.log2(i)) - 1))
+                        splitPointsLookup[i] = [minbest, maxbest, minsplit]
+                    }
                     const urlParams = new URLSearchParams(window.location.search)
                     this.wordBox = urlParams.get('words') ?? ""
                     this.changeWordBox()
@@ -223,8 +227,12 @@
                     this.listLength = this.wordBox.replace(/[^\n]/g,'').length + 2
                     const crammedWord = words.map(word => word.check).join(",")
                     if (crammedWord !== this.lastBoxCalculated) {
+                        wordsKeyed = {}
+                        words.forEach(word => {
+                            wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
+                        })
                         this.lastBoxCalculated = crammedWord
-                        this.startNode.words = words.map(word => word.orig)
+                        this.startNode = new TNode(words.map(word => word.orig), 0)
                         this.checkDeadEnds()
                         this.calcSums(this.startNode)
                         this.deselectLetter(this.startNode)
@@ -232,7 +240,7 @@
                     }
                 },
                 checkDeadEnds() {
-                    const checkers = this.startNode.words.map(word => ({ orig: word, letters: usedLetters(word) })).sort(({ letters: a }, { letters: b}) => a < b ? -1 : a > b ? 1 : 0)
+                    const checkers = this.startNode.words.map(word => ({ orig: word, letters: wordsKeyed[word] })).sort(({ letters: a }, { letters: b}) => a < b ? -1 : a > b ? 1 : 0)
                     const seen = new Set()
                     const dupeSet = new Set()
                     this.dupes = [];
@@ -248,7 +256,7 @@
                     })
                 },
                 calcSums(node, recurse) {
-                    node.matrix = node.words.map(word => this.letters.map(c => word.toUpperCase().includes(c) ? 1 : 0))
+                    node.matrix = node.words.map(word => this.letters.map(c => wordsKeyed[word].includes(c) ? 1 : 0))
                     if (node.words.length > 0) {
                         node.sums = node.matrix.reduce((prev, curr) => {
                             return curr.map((v, idx) => {
@@ -257,9 +265,16 @@
                         })
                     }
                     const len = node.words.length
-                    const minbest = Math.floor(len / 2)
-                    const maxbest = Math.ceil(len / 2)
-                    const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
+                    let minbest, maxbest, minsplit
+                    const precalcSplits = splitPointsLookup[len]
+                    if (precalcSplits !== undefined) {
+                        [minbest, maxbest, minsplit] = precalcSplits
+                    } else {
+                        // fallback if a user enters more than 128 words.
+                        minbest = Math.floor(len / 2)
+                        maxbest = Math.ceil(len / 2)
+                        minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
+                    }
                     node.deadEnd = true
                     node.colors = node.sums.map(v => {
                         let color = ""
