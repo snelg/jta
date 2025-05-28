@@ -36,7 +36,7 @@ body {
 th, td { border: 1px solid; vertical-align: top; }
 table { border-collapse: collapse; border: 1px solid; }
 .hidecol { display: none; }
-.clicky { cursor: pointer; font-weight: bold; text-align: center; }
+.clicky { cursor: pointer; font-weight: bold; text-align: center; vertical-align: middle; }
 .clicky:hover { background-color: #aaddee; }
 .yesnode { background-color: #ccffcc; }
 .nonode { background-color: #ffcccc; }

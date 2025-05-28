@@ -29,7 +29,7 @@
             </div>
         </template>
         <label>
-            <input type="checkbox" x-model="hideBad" @change="calcSums(startNode, true)">
+            <input type="checkbox" x-model="hideBad">
             Hide letters that will increase the maximum number of guesses
         </label>
         <br>
@@ -39,69 +39,30 @@
         </label>
         <br>
         <label>
-            <input type="radio" x-model="nosFirst" value="true" @input="recalcTree()"> "No" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
+            <input type="radio" x-model="nosFirst" value="true"> "No" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
         </label>
         <br>
         <label>
-            <input type="radio" x-model="nosFirst" value="" @input="recalcTree()"> "Yes" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
+            <input type="radio" x-model="nosFirst" value=""> "Yes" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
         </label>
         <br>
         <br>
     </div>
-    <div x-show="isVertical">
-        <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
-            <template x-for="node in gridList">
-                <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
-                    <div x-show="node.chosenLetter">
-                        <span x-text="node.chosenLetter"></span>
-                    </div>
-                    <span x-show="!node.chosenLetter && node.words.length <= 1" x-text="node.words[0]" class="targetword"></span>
-                    <table x-show="!node.chosenLetter && node.words.length > 1" class="picker" x-data="{ hindex: -1 }">
-                        <thead>
-                        <tr>
-                            <template x-if="!node.deadEnd">
-                                <th></th>
-                            </template>
-                            <template x-for="(letter, index) in letters">
-                                <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                    <span x-text="letter"></span>
-                                    <br>
-                                    <span class="pickersum" x-text="node.sums[index]"></span>
-                                </th>
-                            </template>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <template x-for="(word, index) in node.words">
-                            <tr x-show="word != ''">
-                                <td class="wordhere" x-text="word"></td>
-                                <template x-for="(exists, index) in node.matrix[index]">
-                                    <td class="pickercol" :class=" node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                        <template x-if="exists"><span>X</span></template>
-                                    </td>
-                                </template>
-                                <template x-if="node.deadEnd && index === 0">
-                                    <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
-                                        <strong>DEAD END</strong>
-                                    </td>
-                                </template>
-                            </tr>
+    <template x-if="isVertical">
+        <div>
+            <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
+                <template x-for="node in gridList">
+                    <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
+                        <template x-if="node.chosenLetter">
+                            <div>
+                                <span x-text="node.chosenLetter"></span>
+                            </div>
                         </template>
-                        </tbody>
-                    </table>
-                </div>
-            </template>
-        </div>
-    </div>
-    <table x-show="!isVertical">
-        <tbody>
-            <template x-for="level in levels">
-                <tr>
-                    <template x-for="node in level">
-                        <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css">
-                            <div x-show="node.chosenLetter" x-text="node.chosenLetter" @click="deselectLetter(node)" class="clicky"></div>
-                            <span x-show="!node.chosenLetter && node.words.length <= 1" x-text="node.words[0]" class="targetword"></span>
-                            <table x-show="!node.chosenLetter && node.words.length > 1" class="picker" x-data="{ hindex: -1 }">
+                        <template x-if="!node.chosenLetter && node.words.length <= 1">
+                            <span x-text="node.words[0]" class="targetword"></span>
+                        </template>
+                        <template x-if="!node.chosenLetter && node.words.length > 1">
+                            <table class="picker" x-data="{ hindex: -1 }">
                                 <thead>
                                 <tr>
                                     <template x-if="!node.deadEnd">
@@ -121,12 +82,12 @@
                                     <tr x-show="word != ''">
                                         <td class="wordhere" x-text="word"></td>
                                         <template x-for="(exists, index) in node.matrix[index]">
-                                            <td class="pickercol" :class="node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                            <td class="pickercol" :class=" node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
                                                 <template x-if="exists"><span>X</span></template>
                                             </td>
                                         </template>
                                         <template x-if="node.deadEnd && index === 0">
-                                            <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fbc;">
+                                            <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
                                                 <strong>DEAD END</strong>
                                             </td>
                                         </template>
@@ -134,12 +95,67 @@
                                 </template>
                                 </tbody>
                             </table>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+    <template x-if="!isVertical">
+        <table>
+            <tbody>
+            <template x-for="level in levels">
+                <tr>
+                    <template x-for="node in level">
+                        <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
+                            <template x-if="node.chosenLetter">
+                                <div x-text="node.chosenLetter"></div>
+                            </template>
+                            <template x-if="!node.chosenLetter && node.words.length <= 1">
+                                <span x-text="node.words[0]" class="targetword"></span>
+                            </template>
+                            <template x-if="!node.chosenLetter && node.words.length > 1">
+                                <table class="picker" x-data="{ hindex: -1 }">
+                                    <thead>
+                                    <tr>
+                                        <template x-if="!node.deadEnd">
+                                            <th></th>
+                                        </template>
+                                        <template x-for="(letter, index) in letters">
+                                            <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                                <span x-text="letter"></span>
+                                                <br>
+                                                <span class="pickersum" x-text="node.sums[index]"></span>
+                                            </th>
+                                        </template>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <template x-for="(word, index) in node.words">
+                                        <tr x-show="word != ''">
+                                            <td class="wordhere" x-text="word"></td>
+                                            <template x-for="(exists, index) in node.matrix[index]">
+                                                <td class="pickercol" :class="node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                                    <template x-if="exists"><span>X</span></template>
+                                                </td>
+                                            </template>
+                                            <template x-if="node.deadEnd && index === 0">
+                                                <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fbc;">
+                                                    <strong>DEAD END</strong>
+                                                </td>
+                                            </template>
+                                        </tr>
+                                    </template>
+                                    </tbody>
+                                </table>
+                            </template>
                         </td>
                     </template>
                 </tr>
             </template>
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </template>
     <div class="no-print">
         <br>
         Permalink:
@@ -176,7 +192,7 @@
                 dupes: [],
                 gridList: [],
                 isVertical: true,
-                nosFirst: true,
+                nosFirst: "true",
                 hideBad: true,
                 startNode: new TNode([], 0),
                 init () {
@@ -196,6 +212,7 @@
                         this.deserializePicks(this.startNode, pickPieces)
                     }
                     this.$watch('nosFirst', () => this.recalcTree())
+                    this.$watch('hideBad', () => this.calcSums(this.startNode, true))
                 },
                 deserializePicks(node, picked) {
                     if (picked.length === 0 || node.words.length < 2) {
