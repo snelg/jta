@@ -331,7 +331,7 @@
                 },
                 calcTree(node) {
                     if (!node) {
-                        return { leaves: 0, maxLevel: 0 }
+                        return 0
                     }
                     if (!this.levels[node.level]) {
                         this.levelCount = Math.max(this.levelCount, node.level + 1)
@@ -340,21 +340,19 @@
                     this.levels[node.level].push(node)
                     this.gridList.push(node)
                     if (node.chosenLetter) {
-                        let noResults, yesResults
+                        let noLeaves, yesLeaves
                         if (this.nosFirst) {
-                            noResults = this.calcTree(node.noNode)
-                            yesResults = this.calcTree(node.yesNode)
+                            noLeaves = this.calcTree(node.noNode)
+                            yesLeaves = this.calcTree(node.yesNode)
                         } else {
-                            yesResults = this.calcTree(node.yesNode)
-                            noResults = this.calcTree(node.noNode)
+                            yesLeaves = this.calcTree(node.yesNode)
+                            noLeaves = this.calcTree(node.noNode)
                         }
-                        node.leaves = noResults.leaves + yesResults.leaves
-                        node.maxLevel = Math.max(noResults.maxLevel, yesResults.maxLevel)
+                        node.leaves = noLeaves + yesLeaves
                     } else {
                         node.leaves = 1
-                        node.maxLevel = node.level
                     }
-                    return { leaves: node.leaves, maxLevel: node.maxLevel }
+                    return node.leaves
                 },
                 setRowspan(node) {
                     if (!node) {
