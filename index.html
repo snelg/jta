@@ -7,109 +7,57 @@
     <script defer src="alpine3.14.9.js"></script>
 </head>
 <body x-data="main">
-    <div class="no-print">
-        <div>
+    <div class="main">
+        <div class="no-print">
+            <div>
+                <label>
+                    Word list (separated by commas or linebreaks)
+                    <br>
+                    <textarea placeholder="Add words here..." style="width: 99%;" :rows="Math.max(listLength,2)" x-model="wordBox" @input="changeWordBox()"></textarea>
+                </label>
+            </div>
+            <br>
+            <template x-if="dupes.length > 0">
+                <div class="dupewarn">
+                    The following words have matching sets of letters. Anagram methods cannot differentiate them:
+                    <ul>
+                        <template x-for="dupelist in dupes">
+                            <li>
+                                <span x-text="dupelist.join(', ')"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
             <label>
-                Word list (separated by commas or linebreaks)
-                <br>
-                <textarea placeholder="Add words here..." style="width: 99%;" :rows="Math.max(listLength,2)" x-model="wordBox" @input="changeWordBox()"></textarea>
+                <input type="checkbox" x-model="hideBad">
+                Hide letters that will increase the maximum number of guesses
             </label>
+            <br>
+            <label>
+                <input type="checkbox" x-model="isVertical">
+                Vertical
+            </label>
+            <br>
+            <label>
+                <input type="radio" x-model="nosFirst" value="true"> "No" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
+            </label>
+            <br>
+            <label>
+                <input type="radio" x-model="nosFirst" value=""> "Yes" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
+            </label>
+            <br>
+            <br>
         </div>
-        <br>
-        <template x-if="dupes.length > 0">
-            <div class="dupewarn">
-                The following words have matching sets of letters. Anagram methods will not be able to differentiate them:
-                <ul>
-                    <template x-for="dupelist in dupes">
-                        <li>
-                            <span x-text="dupelist.join(', ')"></span>
-                        </li>
-                    </template>
-                </ul>
-            </div>
-        </template>
-        <label>
-            <input type="checkbox" x-model="hideBad">
-            Hide letters that will increase the maximum number of guesses
-        </label>
-        <br>
-        <label>
-            <input type="checkbox" x-model="isVertical">
-            Vertical
-        </label>
-        <br>
-        <label>
-            <input type="radio" x-model="nosFirst" value="true"> "No" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
-        </label>
-        <br>
-        <label>
-            <input type="radio" x-model="nosFirst" value=""> "Yes" is <span x-show="isVertical">up</span><span x-show="!isVertical">left</span>
-        </label>
-        <br>
-        <br>
-    </div>
-    <template x-if="isVertical">
-        <div>
-            <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
-                <template x-for="node in gridList">
-                    <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
-                        <template x-if="node.chosenLetter">
-                            <div>
-                                <span x-text="node.chosenLetter"></span>
-                            </div>
-                        </template>
-                        <template x-if="!node.chosenLetter && node.words.length <= 1">
-                            <span x-text="node.words[0]" class="targetword"></span>
-                        </template>
-                        <template x-if="!node.chosenLetter && node.words.length > 1">
-                            <table class="picker" x-data="{ hindex: -1 }">
-                                <thead>
-                                <tr>
-                                    <template x-if="!node.deadEnd">
-                                        <th></th>
-                                    </template>
-                                    <template x-for="(letter, index) in letters">
-                                        <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                            <span x-text="letter"></span>
-                                            <br>
-                                            <span class="pickersum" x-text="node.sums[index]"></span>
-                                        </th>
-                                    </template>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <template x-for="(word, index) in node.words">
-                                    <tr x-show="word != ''">
-                                        <td class="wordhere" x-text="word"></td>
-                                        <template x-for="(exists, index) in node.matrix[index]">
-                                            <td class="pickercol" :class=" node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                                <template x-if="exists"><span>X</span></template>
-                                            </td>
-                                        </template>
-                                        <template x-if="node.deadEnd && index === 0">
-                                            <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
-                                                <strong>DEAD END</strong>
-                                            </td>
-                                        </template>
-                                    </tr>
-                                </template>
-                                </tbody>
-                            </table>
-                        </template>
-                    </div>
-                </template>
-            </div>
-        </div>
-    </template>
-    <template x-if="!isVertical">
-        <table>
-            <tbody>
-            <template x-for="level in levels">
-                <tr>
-                    <template x-for="node in level">
-                        <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
+        <template x-if="isVertical">
+            <div>
+                <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
+                    <template x-for="node in gridList">
+                        <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
                             <template x-if="node.chosenLetter">
-                                <div x-text="node.chosenLetter"></div>
+                                <div>
+                                    <span x-text="node.chosenLetter"></span>
+                                </div>
                             </template>
                             <template x-if="!node.chosenLetter && node.words.length <= 1">
                                 <span x-text="node.words[0]" class="targetword"></span>
@@ -135,12 +83,12 @@
                                         <tr x-show="word != ''">
                                             <td class="wordhere" x-text="word"></td>
                                             <template x-for="(exists, index) in node.matrix[index]">
-                                                <td class="pickercol" :class="node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                                <td class="pickercol" :class=" node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
                                                     <template x-if="exists"><span>X</span></template>
                                                 </td>
                                             </template>
                                             <template x-if="node.deadEnd && index === 0">
-                                                <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fbc;">
+                                                <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
                                                     <strong>DEAD END</strong>
                                                 </td>
                                             </template>
@@ -149,21 +97,86 @@
                                     </tbody>
                                 </table>
                             </template>
-                        </td>
+                        </div>
                     </template>
-                </tr>
-            </template>
-            </tbody>
-        </table>
-    </template>
-    <div class="no-print">
-        <br>
-        Permalink:
-        <br>
-        <a :href="permaLink" x-text="permaLink"></a>
+                </div>
+            </div>
+        </template>
+        <template x-if="!isVertical">
+            <table>
+                <tbody>
+                <template x-for="level in levels">
+                    <tr>
+                        <template x-for="node in level">
+                            <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
+                                <template x-if="node.chosenLetter">
+                                    <div x-text="node.chosenLetter"></div>
+                                </template>
+                                <template x-if="!node.chosenLetter && node.words.length <= 1">
+                                    <span x-text="node.words[0]" class="targetword"></span>
+                                </template>
+                                <template x-if="!node.chosenLetter && node.words.length > 1">
+                                    <table class="picker" x-data="{ hindex: -1 }">
+                                        <thead>
+                                        <tr>
+                                            <template x-if="!node.deadEnd">
+                                                <th></th>
+                                            </template>
+                                            <template x-for="(letter, index) in letters">
+                                                <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                                    <span x-text="letter"></span>
+                                                    <br>
+                                                    <span class="pickersum" x-text="node.sums[index]"></span>
+                                                </th>
+                                            </template>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <template x-for="(word, index) in node.words">
+                                            <tr x-show="word != ''">
+                                                <td class="wordhere" x-text="word"></td>
+                                                <template x-for="(exists, index) in node.matrix[index]">
+                                                    <td class="pickercol" :class="node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
+                                                        <template x-if="exists"><span>X</span></template>
+                                                    </td>
+                                                </template>
+                                                <template x-if="node.deadEnd && index === 0">
+                                                    <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
+                                                        <strong>DEAD END</strong>
+                                                    </td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                        </tbody>
+                                    </table>
+                                </template>
+                            </td>
+                        </template>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </template>
+        <template x-if="partialDeadEndTotal">
+            <div class="no-print" style="margin-top: 1em;">
+            <span style="border: 1px solid #888; padding: 0.5em;">
+                <strong style="color: #800">"Dead End"</strong> note: Un-checking the "Hide letters..." checkbox will show more options, but the number of potential required guesses will increase.
+            </span>
+            </div>
+        </template>
+        <div class="no-print">
+            <br>
+            Permalink:
+            <br>
+            <a :href="permaLink" x-text="permaLink"></a>
+        </div>
     </div>
+    <footer class="no-print" style="margin-top: 1em; border-top: 1px solid #888; padding: 0.5em 1em; line-height: 1.5em">
+        Bug reports, questions, and whatnot: jta@snelg.com
+        <br>
+        Concept credit: Andy <span style="font-style: italic; font-size: small">(but if you didn't already know that, then I don't know how you got here...)</span>
+    </footer>
     <script>
-        const splitPointsLookup = {}
         let wordsKeyed = {}
         class TNode {
             constructor(words, level, css) {
@@ -196,12 +209,6 @@
                 hideBad: true,
                 startNode: new TNode([], 0),
                 init () {
-                    for (let i = 1; i <= 128; i++) {
-                        const minbest = Math.floor(i / 2)
-                        const maxbest = Math.ceil(i / 2)
-                        const minsplit = Math.pow(2, (Math.ceil(Math.log2(i)) - 1))
-                        splitPointsLookup[i] = [minbest, maxbest, minsplit]
-                    }
                     const urlParams = new URLSearchParams(window.location.search)
                     this.wordBox = urlParams.get('words') ?? ""
                     this.changeWordBox()
@@ -272,6 +279,16 @@
                         this.dupes.push(checkers.filter(word => word.letters === letters).map(word => word.orig))
                     })
                 },
+                partialDeadEndTotal() {
+                    return this.partialDeadEndCount(this.startNode)
+                },
+                partialDeadEndCount(node) {
+                    if (!node) {
+                        return 0
+                    }
+                    const count = (node.deadEnd && node.badLetters) ? 1 : 0
+                    return count + this.partialDeadEndCount(node.noNode) + this.partialDeadEndCount(node.yesNode)
+                },
                 calcSums(node, recurse) {
                     node.matrix = node.words.map(word => this.letters.map(c => wordsKeyed[word].includes(c) ? 1 : 0))
                     if (node.words.length > 0) {
@@ -282,33 +299,23 @@
                         })
                     }
                     const len = node.words.length
-                    let minbest, maxbest, minsplit
-                    const precalcSplits = splitPointsLookup[len]
-                    if (precalcSplits !== undefined) {
-                        [minbest, maxbest, minsplit] = precalcSplits
-                    } else {
-                        // fallback if a user enters more than 128 words.
-                        minbest = Math.floor(len / 2)
-                        maxbest = Math.ceil(len / 2)
-                        minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
-                    }
-                    node.deadEnd = true
+                    const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
+                    node.badLetters = 0
+                    node.goodLetters = 0
                     node.colors = node.sums.map(v => {
                         let color = ""
                         if (v === 0 || v === len) {
                             color = "hidecol"
                         } else if (v > minsplit || v < (len - minsplit)) {
-                            if (this.hideBad) {
-                                color = "hidecol"
-                            } else {
-                                color = "warning"
+                            node.badLetters++
+                            color = "warning"
+                            if (node.ignoreWarning || !this.hideBad) {
+                                color += " override"
                             }
-                        } else if (v >= minbest && v <= maxbest) {
-                            color = "best"
+                        } else {
+                            node.goodLetters++
                         }
-                        if (color !== "hidecol") {
-                            node.deadEnd = false
-                        }
+                        node.deadEnd = this.hideBad ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
                         return color
                     })
                     if (recurse) {
