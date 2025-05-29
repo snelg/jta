@@ -37,6 +37,7 @@ body {
 .main {
     margin-right: auto;
     margin-left: auto;
+    width: 100%;
 }
 th, td { border: 1px solid; vertical-align: top; }
 table { border-collapse: collapse; border: 1px solid; }
