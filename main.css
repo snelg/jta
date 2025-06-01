@@ -45,6 +45,7 @@ table { border-collapse: collapse; border: 1px solid; }
 td.warning.override,th.warning.override { display: table-cell; }
 div.warning.override { display: block; }
 .clicky { cursor: pointer; font-weight: bold; text-align: center; vertical-align: middle; }
+table.vert .clicky { padding: 1em; }
 .clicky:hover { background-color: #aaddee; }
 .yesnode { background-color: #ccffcc; }
 .nonode { background-color: #ffcccc; }
