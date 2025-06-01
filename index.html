@@ -57,15 +57,14 @@
             <br>
             <br>
         </div>
-        <template x-if="isVertical">
-            <div>
-                <div class="gridwrap" :style="'grid-template-rows: ' + 'auto '.repeat(startNode.leaves) + ';grid-template-columns: ' + 'auto '.repeat(levelCount) + ';'">
-                    <template x-for="node in gridList">
-                        <div :class="'yaybox ' + node.css + (node.chosenLetter ? ' clicky gridclicky' : '')" :style="'grid-area: span ' + node.leaves + ' / span ' + node.breadth + ';'" @click="deselectLetter(node)">
+        <table :class="isVertical ? 'vert' : ''">
+            <tbody>
+            <template x-for="level in levels">
+                <tr>
+                    <template x-for="node in level">
+                        <td :colspan="isVertical ? node.breadth : node.leaves" :rowspan="isVertical ? node.leaves : node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
                             <template x-if="node.chosenLetter">
-                                <div>
-                                    <span x-text="node.chosenLetter"></span>
-                                </div>
+                                <div x-text="node.chosenLetter"></div>
                             </template>
                             <template x-if="!node.chosenLetter && node.words.length <= 1">
                                 <span x-text="node.words[0]" class="targetword"></span>
@@ -105,66 +104,13 @@
                                     </tbody>
                                 </table>
                             </template>
-                        </div>
+                        </td>
                     </template>
-                </div>
-            </div>
-        </template>
-        <template x-if="!isVertical">
-            <table>
-                <tbody>
-                <template x-for="level in levels">
-                    <tr>
-                        <template x-for="node in level">
-                            <td :colspan="node.leaves" :rowspan="node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
-                                <template x-if="node.chosenLetter">
-                                    <div x-text="node.chosenLetter"></div>
-                                </template>
-                                <template x-if="!node.chosenLetter && node.words.length <= 1">
-                                    <span x-text="node.words[0]" class="targetword"></span>
-                                </template>
-                                <template x-if="!node.chosenLetter && node.words.length > 1">
-                                    <table class="picker" x-data="{ hindex: -1 }">
-                                        <thead>
-                                        <tr>
-                                            <template x-if="!node.deadEnd">
-                                                <th></th>
-                                            </template>
-                                            <template x-for="(letter, index) in letters">
-                                                <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                                    <span x-text="letter"></span>
-                                                    <br>
-                                                    <span class="pickersum" x-text="node.sums[index]"></span>
-                                                </th>
-                                            </template>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        <template x-for="(word, index) in node.words">
-                                            <tr x-show="word != ''">
-                                                <td class="wordhere" x-text="word"></td>
-                                                <template x-for="(exists, index) in node.matrix[index]">
-                                                    <td class="pickercol" :class="node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                                        <template x-if="exists"><span>X</span></template>
-                                                    </td>
-                                                </template>
-                                                <template x-if="node.deadEnd && index === 0">
-                                                    <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
-                                                        <strong>DEAD END</strong>
-                                                    </td>
-                                                </template>
-                                            </tr>
-                                        </template>
-                                        </tbody>
-                                    </table>
-                                </template>
-                            </td>
-                        </template>
-                    </tr>
-                </template>
-                </tbody>
-            </table>
-        </template>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+        <div x-text="JSON.stringify(Object.keys(levels))"></div>
         <template x-if="partialDeadEndTotal">
             <div class="no-print" style="margin-top: 1em;">
                 <div style="border: 1px solid #888; padding: 0.5em;">
@@ -208,9 +154,8 @@
                 listLength: 1,
                 lastBoxCalculated: "",
                 letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
-                levels: [],
+                levels: {},
                 dupes: [],
-                gridList: [],
                 isVertical: true,
                 nosFirst: "true",
                 hideBad: true,
@@ -228,6 +173,7 @@
                         this.deserializePicks(this.startNode, pickPieces)
                     }
                     this.$watch('nosFirst', () => this.recalcTree())
+                    this.$watch('isVertical', () => this.recalcTree())
                     this.$watch('hideBad', () => this.calcSums(this.startNode, true))
                     this.$watch('sortByHits', () => this.calcSums(this.startNode, true))
                 },
@@ -364,35 +310,49 @@
                 },
                 recalcTree() {
                     this.levelCount = 0
-                    this.levels = []
-                    this.gridList = []
                     this.calcGridDimensions(this.startNode)
                     this.setBreadth(this.startNode)
+                    this.levels = {}
+                    this.currentRow = 0
+                    // Stupid hack so that every *other* time the tree is rebuilt, alpine sees completely
+                    // different keys and thus re-renders everything. Otherwise, the rows/columns sometimes
+                    // end up wonky
+                    this.alpineHackOffset = (this.alpineHackOffset) ? 0 : 1
+                    this.populateTree(this.startNode)
                 },
                 calcGridDimensions(node) {
                     if (!node) {
                         return 0
                     }
-                    if (!this.levels[node.level]) {
-                        this.levelCount = Math.max(this.levelCount, node.level + 1)
-                        this.levels[node.level] = []
-                    }
-                    this.levels[node.level].push(node)
-                    this.gridList.push(node)
+                    this.levelCount = Math.max(this.levelCount, node.level + 1)
                     if (node.chosenLetter) {
-                        let noLeaves, yesLeaves
-                        if (this.nosFirst) {
-                            noLeaves = this.calcGridDimensions(node.noNode)
-                            yesLeaves = this.calcGridDimensions(node.yesNode)
-                        } else {
-                            yesLeaves = this.calcGridDimensions(node.yesNode)
-                            noLeaves = this.calcGridDimensions(node.noNode)
-                        }
-                        node.leaves = noLeaves + yesLeaves
+                        node.leaves = this.calcGridDimensions(node.noNode) + this.calcGridDimensions(node.yesNode)
                     } else {
                         node.leaves = 1
                     }
                     return node.leaves
+                },
+                populateTree(node) {
+                    if (!node) {
+                        return
+                    }
+                    const level = this.isVertical ? (this.currentRow * 2 + this.alpineHackOffset) : node.level
+                    if (this.isVertical && node.level + node.breadth >= this.levelCount) {
+                        this.currentRow++
+                    }
+                    if (!this.levels[level]) {
+                        this.levels[level] = []
+                    }
+                    this.levels[level].push(node)
+                    if (node.chosenLetter) {
+                        if (this.nosFirst) {
+                            this.populateTree(node.noNode)
+                            this.populateTree(node.yesNode)
+                        } else {
+                            this.populateTree(node.yesNode)
+                            this.populateTree(node.noNode)
+                        }
+                    }
                 },
                 setBreadth(node) {
                     if (!node) {
