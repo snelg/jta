@@ -35,6 +35,11 @@
             </label>
             <br>
             <label>
+                <input type="checkbox" x-model="sortByHits">
+                Sort letters by total number of matches (instead of alphabetical)
+            </label>
+            <br>
+            <label>
                 <input type="checkbox" x-model="isVertical">
                 Vertical
             </label>
@@ -69,9 +74,9 @@
                                         <template x-if="!node.deadEnd">
                                             <th></th>
                                         </template>
-                                        <template x-for="(letter, index) in letters">
+                                        <template x-for="index in node.matchSortIndex">
                                             <th :class="node.colors[index] + (hindex == index ? ' hovering' : '')" class="pickercol" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                                <span x-text="letter"></span>
+                                                <span x-text="letters[index]"></span>
                                                 <br>
                                                 <span class="pickersum" x-text="node.sums[index]"></span>
                                             </th>
@@ -79,15 +84,15 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <template x-for="(word, index) in node.words">
+                                    <template x-for="(word, wordIndex) in node.words">
                                         <tr x-show="word != ''">
                                             <td class="wordhere" x-text="word"></td>
-                                            <template x-for="(exists, index) in node.matrix[index]">
+                                            <template x-for="index in node.matchSortIndex">
                                                 <td class="pickercol" :class=" node.colors[index] + (hindex == index ? ' hovering' : '')" @click.stop="selectLetter(node, index)" @mouseenter="hindex = index" @mouseleave="hindex = -1">
-                                                    <template x-if="exists"><span>X</span></template>
+                                                    <template x-if="node.matrix[wordIndex][index]"><span>X</span></template>
                                                 </td>
                                             </template>
-                                            <template x-if="node.deadEnd && index === 0">
+                                            <template x-if="node.deadEnd && wordIndex === 0">
                                                 <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
                                                     <strong>DEAD END</strong>
                                                 </td>
@@ -207,7 +212,9 @@
                 nosFirst: "true",
                 hideBad: true,
                 startNode: new TNode([], 0),
+                sortByHits: false,
                 init () {
+                    this.letterKeys = Object.keys(Alpine.raw(this.letters))
                     const urlParams = new URLSearchParams(window.location.search)
                     this.wordBox = urlParams.get('words') ?? ""
                     this.changeWordBox()
@@ -219,6 +226,7 @@
                     }
                     this.$watch('nosFirst', () => this.recalcTree())
                     this.$watch('hideBad', () => this.calcSums(this.startNode, true))
+                    this.$watch('sortByHits', () => this.calcSums(this.startNode, true))
                 },
                 deserializePicks(node, picked) {
                     if (picked.length === 0 || node.words.length < 2) {
@@ -289,6 +297,8 @@
                     return count + this.partialDeadEndCount(node.noNode) + this.partialDeadEndCount(node.yesNode)
                 },
                 calcSums(node, recurse) {
+                    // ...yeah, this "keep matrix and sums as separate arrays" ended up pretty clunky,
+                    // especially after adding option to sort by letter matches. Might refactor in the future.
                     node.matrix = node.words.map(word => this.letters.map(c => this.wordsKeyed[word].includes(c) ? 1 : 0))
                     if (node.words.length > 0) {
                         node.sums = node.matrix.reduce((prev, curr) => {
@@ -296,6 +306,10 @@
                                 return v + prev[idx]
                             })
                         })
+                    }
+                    node.matchSortIndex = Array.from(this.letterKeys)
+                    if (this.sortByHits) {
+                        node.matchSortIndex.sort((a, b) => node.sums[b] - node.sums[a])
                     }
                     const len = node.words.length
                     const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
