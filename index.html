@@ -61,8 +61,8 @@
             <tbody>
             <template x-for="level in levels">
                 <tr>
-                    <template x-for="node in level">
-                        <td :colspan="isVertical ? node.breadth : node.leaves" :rowspan="isVertical ? node.leaves : node.breadth" :class="node.css + (node.chosenLetter ? ' clicky' : '')" @click="deselectLetter(node)">
+                    <template x-for="{ node, colspan, rowspan, css } in level">
+                        <td :colspan="colspan" :rowspan="rowspan" :class="css" @click="deselectLetter(node)">
                             <template x-if="node.chosenLetter">
                                 <div x-text="node.chosenLetter"></div>
                             </template>
@@ -153,7 +153,7 @@
                 listLength: 1,
                 lastBoxCalculated: "",
                 letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
-                levels: {},
+                levels: [],
                 dupes: [],
                 isVertical: true,
                 nosFirst: "true",
@@ -311,12 +311,8 @@
                     this.levelCount = 0
                     this.calcGridDimensions(this.startNode)
                     this.setBreadth(this.startNode)
-                    this.levels = {}
+                    this.levels = []
                     this.currentRow = 0
-                    // Stupid hack so that every *other* time the tree is rebuilt, alpine sees completely
-                    // different keys and thus re-renders everything. Otherwise, the rows/columns sometimes
-                    // end up wonky
-                    this.alpineHackOffset = (this.alpineHackOffset) ? 0 : 1
                     this.populateTree(this.startNode)
                 },
                 calcGridDimensions(node) {
@@ -335,14 +331,19 @@
                     if (!node) {
                         return
                     }
-                    const level = this.isVertical ? (this.currentRow * 2 + this.alpineHackOffset) : node.level
+                    const level = this.isVertical ? this.currentRow : node.level
                     if (this.isVertical && node.level + node.breadth >= this.levelCount) {
                         this.currentRow++
                     }
                     if (!this.levels[level]) {
                         this.levels[level] = []
                     }
-                    this.levels[level].push(node)
+                    this.levels[level].push({
+                        colspan: this.isVertical ? node.breadth : node.leaves,
+                        rowspan: this.isVertical ? node.leaves : node.breadth,
+                        css: node.css + (node.chosenLetter ? ' clicky' : ''),
+                        node
+                    })
                     if (node.chosenLetter) {
                         if (this.nosFirst) {
                             this.populateTree(node.noNode)
