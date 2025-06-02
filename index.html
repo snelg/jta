@@ -281,9 +281,9 @@
                         } else {
                             node.goodLetters++
                         }
-                        node.deadEnd = (this.hideBad && !node.ignoreWarning) ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
                         return color
                     })
+                    node.deadEnd = (this.hideBad && !node.ignoreWarning) ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
                     if (recurse) {
                         if (node.yesNode) {
                             this.calcSums(node.yesNode, true)
