@@ -55,7 +55,7 @@ table.vert .clicky { padding: 1em; }
 .picker { margin: 0.5em; }
 .gridclicky { place-content: center; padding: 1em; }
 .pickersum { font-weight: normal; }
-.wordhere { padding-left: 0.5em; }
+.wordhere { padding: 0 0.5em; }
 .dupewarn {
     border: 2px solid red;
     margin-bottom: 1em;
