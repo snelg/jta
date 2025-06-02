@@ -56,6 +56,7 @@
             </label>
             <br>
             <br>
+            <button x-show="startNode.words.length > 0" @click.stop="scanPerfect">Scan for "perfect"</button>
         </div>
         <table x-show="startNode.words.length" :class="isVertical ? 'vert' : ''">
             <tbody>
@@ -266,24 +267,24 @@
                     }
                     const len = node.words.length
                     const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
-                    node.badLetters = 0
-                    node.goodLetters = 0
-                    node.colors = node.sums.map(v => {
+                    node.badLetterCount = 0
+                    node.goodLetterIndices = []
+                    node.colors = node.sums.map((v, i) => {
                         let color = ""
                         if (v === 0 || v === len) {
                             color = "hidecol"
                         } else if (v > minsplit || v < (len - minsplit)) {
-                            node.badLetters++
+                            node.badLetterCount++
                             color = "warning"
                             if (node.ignoreWarning || !this.hideBad) {
                                 color += " override"
                             }
                         } else {
-                            node.goodLetters++
+                            node.goodLetterIndices.push(i)
                         }
                         return color
                     })
-                    node.deadEnd = (this.hideBad && !node.ignoreWarning) ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
+                    node.deadEnd = (this.hideBad && !node.ignoreWarning) ? node.goodLetterIndices.length === 0 : node.goodLetterIndices.length + node.badLetterCount === 0
                     if (recurse) {
                         if (node.yesNode) {
                             this.calcSums(node.yesNode, true)
@@ -386,6 +387,71 @@
                     }
                     url.search = params.toString()
                     return url.href
+                },
+                scanPerfect() {
+                    const options = []
+                    const levels = []
+                    const allLetters = Alpine.raw(this.letters)
+                    const wordsKeyed = Alpine.raw(this.wordsKeyed)
+                    const allLetterIndices = new Set(Object.keys(allLetters).map(i => parseInt(i)))
+                    levels[0] = {
+                        nodes: [Object.assign({}, Alpine.raw(this.startNode))]
+                    }
+                    function scanLevel(level, idx) {
+                        level.nodes.forEach(node => calcSums(node))
+                        const incomplete = level.nodes.filter(node => node.words.length > 1)
+                        if (incomplete.length === 0) {
+                            options.push(levels.slice(0, levels.length - 1).map(level => allLetters[level.currentLetterIndex]).join(''))
+                            return
+                        }
+                        level.possibleLetters = incomplete.reduce((prev, curr) => {
+                            const currSet = new Set(curr.goodLetterIndices)
+                            return prev.intersection(currSet)
+                        }, allLetterIndices)
+                        if (level.possibleLetters.size === 0) {
+                            return
+                        }
+                        level.possibleLetters.forEach(letterIndex => {
+                            level.currentLetterIndex = letterIndex
+                            const nextNodes = []
+                            incomplete.forEach(node => {
+                                const yesWords = node.words.filter((word, wordIndex) => node.matrix[wordIndex][letterIndex])
+                                const noWords = node.words.filter((word, wordIndex) => !node.matrix[wordIndex][letterIndex])
+                                const yesNode = new TNode(yesWords, node.level + 1, 'yesnode')
+                                const noNode = new TNode(noWords, node.level + 1, 'nonode')
+                                calcSums(yesNode)
+                                calcSums(noNode)
+                                nextNodes.push(yesNode)
+                                nextNodes.push(noNode)
+                            })
+                            levels[idx + 1] = {nodes: nextNodes}
+                            scanLevel(levels[idx + 1], idx + 1)
+                        })
+                    }
+                    function printCurrent() {
+                        const foo = levels.slice(0, levels.length - 1)
+                        return levels.slice(0, levels.length - 1).map(level => allLetters[level.currentLetterIndex]).join('')
+                    }
+                    function calcSums(node) {
+                        node.matrix = node.words.map(word => allLetters.map(c => wordsKeyed[word].includes(c) ? 1 : 0))
+                        if (node.words.length > 0) {
+                            node.sums = node.matrix.reduce((prev, curr) => {
+                                return curr.map((v, idx) => {
+                                    return v + prev[idx]
+                                })
+                            })
+                        }
+                        const len = node.words.length
+                        const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
+                        node.goodLetterIndices = []
+                        node.sums.forEach((v, i) => {
+                            if (v >= (len - minsplit) && v <= minsplit) {
+                                node.goodLetterIndices.push(i)
+                            }
+                        })
+                    }
+                    scanLevel(levels[0], 0)
+                    console.log("FOUND", options.join(", "))
                 }
             }))
         })
