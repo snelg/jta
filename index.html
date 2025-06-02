@@ -57,7 +57,7 @@
             <br>
             <br>
         </div>
-        <table :class="isVertical ? 'vert' : ''">
+        <table x-show="startNode.words.length" :class="isVertical ? 'vert' : ''">
             <tbody>
             <template x-for="level in levels">
                 <tr>
@@ -96,7 +96,7 @@
                                             </template>
                                             <template x-if="node.deadEnd && wordIndex === 0">
                                                 <td :rowspan="node.words.length" style="vertical-align: middle;background-color: #800;color: #fff;">
-                                                    <strong>DEAD END</strong>
+                                                    <strong style="padding: 0 0.5em">DEAD END *</strong>
                                                 </td>
                                             </template>
                                         </tr>
@@ -113,7 +113,7 @@
         <template x-if="partialDeadEndTotal">
             <div class="no-print" style="margin-top: 1em;">
                 <div style="border: 1px solid #888; padding: 0.5em;">
-                    <strong style="color: #800">"Dead End"</strong> note: Un-checking the "Hide letters..." checkbox will show more options, but the number of potential required guesses will increase.
+                    <strong style="color: #800">* DEAD END</strong>: No letters will split this word list without increasing the maximum number of potentially required guesses. Un-checking the "Hide letters..." checkbox will show the hidden "non-optimal" letters, but they will be marked by darker columns.
                 </div>
             </div>
         </template>
@@ -254,10 +254,15 @@
                                 return v + prev[idx]
                             })
                         })
+                    } else {
+                        node.sums = []
                     }
-                    node.matchSortIndex = Array.from(this.letterKeys)
                     if (this.sortByHits) {
+                        // .sort is in-place, so make a copy of the base array
+                        node.matchSortIndex = Array.from(this.letterKeys)
                         node.matchSortIndex.sort((a, b) => node.sums[b] - node.sums[a])
+                    } else {
+                        node.matchSortIndex = this.letterKeys
                     }
                     const len = node.words.length
                     const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
@@ -276,7 +281,7 @@
                         } else {
                             node.goodLetters++
                         }
-                        node.deadEnd = this.hideBad ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
+                        node.deadEnd = (this.hideBad && !node.ignoreWarning) ? node.goodLetters === 0 : node.goodLetters + node.badLetters === 0
                         return color
                     })
                     if (recurse) {
