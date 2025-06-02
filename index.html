@@ -285,7 +285,7 @@
                     if (!node) {
                         return 0
                     }
-                    const count = (node.deadEnd && node.badLetters) ? 1 : 0
+                    const count = (node.deadEnd && node.badLetters && !node.chosenLetter) ? 1 : 0
                     return count + this.partialDeadEndCount(node.noNode) + this.partialDeadEndCount(node.yesNode)
                 },
                 calcSums(node, recurse) {
