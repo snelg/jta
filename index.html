@@ -57,6 +57,8 @@
             <br>
             <br>
             <button x-show="startNode.words.length > 0" @click.stop="scanPerfect">Scan for "perfect"</button>
+            <br>
+            <button x-show="startNode.words.length > 0" @click.stop="scanSilent">Scan for "silent"</button>
         </div>
         <table x-show="startNode.words.length" :class="isVertical ? 'vert' : ''">
             <tbody>
@@ -389,6 +391,13 @@
                     return url.href
                 },
                 scanPerfect() {
+                    return this.scanSolutions(false)
+                },
+                scanSilent() {
+                    return this.scanSolutions(true)
+                },
+                scanSolutions(silent) {
+                    let skip = false
                     const options = []
                     const levels = []
                     const allLetters = Alpine.raw(this.letters)
@@ -402,9 +411,15 @@
                         const incomplete = level.nodes.filter(node => node.words.length > 1)
                         if (incomplete.length === 0) {
                             options.push(levels.slice(0, levels.length - 1).map(level => allLetters[level.currentLetterIndex]).join(''))
+                            if (silent) {
+                                skip = true
+                            }
                             return
                         }
                         level.possibleLetters = incomplete.reduce((prev, curr) => {
+                            if (silent) {
+                                return prev.intersection(new Set(curr.singleLetterIndices))
+                            }
                             const currSet = new Set(curr.goodLetterIndices)
                             return prev.intersection(currSet)
                         }, allLetterIndices)
@@ -412,6 +427,9 @@
                             return
                         }
                         level.possibleLetters.forEach(letterIndex => {
+                            if (skip) {
+                                return
+                            }
                             level.currentLetterIndex = letterIndex
                             const nextNodes = []
                             incomplete.forEach(node => {
@@ -425,7 +443,9 @@
                                 nextNodes.push(noNode)
                             })
                             levels[idx + 1] = {nodes: nextNodes}
-                            scanLevel(levels[idx + 1], idx + 1)
+                            if (!skip) {
+                                scanLevel(levels[idx + 1], idx + 1)
+                            }
                         })
                     }
                     function printCurrent() {
@@ -444,7 +464,11 @@
                         const len = node.words.length
                         const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
                         node.goodLetterIndices = []
+                        node.singleLetterIndices = []
                         node.sums.forEach((v, i) => {
+                            if (v === 1) {
+                                node.singleLetterIndices.push(i)
+                            }
                             if (v >= (len - minsplit) && v <= minsplit) {
                                 node.goodLetterIndices.push(i)
                             }
