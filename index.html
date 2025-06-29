@@ -56,9 +56,9 @@
             </label>
             <br>
             <br>
-            <button x-show="startNode.words.length > 0" @click.stop="scanPerfect">Scan for "perfect"</button>
+            <button x-show="showTools" @click.stop="scanPerfect">Scan for "perfect"</button>
             <br>
-            <button x-show="startNode.words.length > 0" @click.stop="scanSilent">Scan for "silent"</button>
+            <button x-show="showTools" @click.stop="scanSilent">Scan for "silent"</button>
         </div>
         <table x-show="startNode.words.length" :class="isVertical ? 'vert' : ''">
             <tbody>
@@ -126,9 +126,24 @@
             <br>
             <a :href="permaLink" x-text="permaLink"></a>
         </div>
+        <div x-show="showTools && scanComplete" class="no-print">
+            <br>
+            <span x-show="scanResults.length === 0">No Results</span>
+            <template x-for="(solution, index) in filteredScanResults">
+                <span>
+                    <span x-text="solution" @click.stop="selectSolution(solution)"></span><span x-show="index < filteredScanResults.length - 1">, </span>
+                </span>
+            </template>
+            <div x-show="scanResults.length > 1">
+                <br>
+                Exclude letters: <input x-model="excludeLetters">
+                <br>
+                Include letters: <input x-model="includeLetters">
+            </div>
+        </div>
     </div>
     <footer class="no-print" style="margin-top: 1em; border-top: 1px solid #888; padding: 0.5em 1em; line-height: 1.5em">
-        Bug reports, questions, and whatnot: jta@snelg.com
+        Bug reports, questions, and <span @click.stop="toggleTools()">whatnot</span>: jta@snelg.com
         <br>
         Concept credit: Andy <span style="font-style: italic; font-size: small">(but if you didn't already know that, then I don't know how you got here...)</span>
     </footer>
@@ -151,8 +166,11 @@
         }
         document.addEventListener('alpine:init', () => {
             Alpine.data('main', () => ({
+                showToolsFlag: false,
                 wordsKeyed: {},
                 wordBox: "",
+                excludeLetters: "",
+                includeLetters: "",
                 listLength: 1,
                 lastBoxCalculated: "",
                 letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
@@ -163,6 +181,23 @@
                 hideBad: true,
                 startNode: new TNode([], 0),
                 sortByHits: false,
+                scanResults: [],
+                scanComplete: false,
+                get showTools() {
+                    return this.showToolsFlag && (this.startNode.words.length > 0)
+                },
+                get filteredScanResults() {
+                    const excludeLetterSet = new Set(this.excludeLetters.toUpperCase().replace(/[^A-Z.]/g, '').split(''))
+                    const includeLetterSet = new Set(this.includeLetters.toUpperCase().replace(/[^A-Z.]/g, '').split(''))
+                    let filteredResults = this.scanResults
+                    if (excludeLetterSet.size > 0) {
+                        filteredResults = filteredResults.filter(word => (new Set(word.split(''))).intersection(excludeLetterSet).size === 0)
+                    }
+                    if (includeLetterSet.size > 0) {
+                        filteredResults = filteredResults.filter(word => (new Set(word.split(''))).intersection(includeLetterSet).size === includeLetterSet.size)
+                    }
+                    return filteredResults
+                },
                 init () {
                     this.letterKeys = Object.keys(Alpine.raw(this.letters))
                     const urlParams = new URLSearchParams(window.location.search)
@@ -178,6 +213,23 @@
                     this.$watch('isVertical', () => this.recalcTree())
                     this.$watch('hideBad', () => this.calcSums(this.startNode, true))
                     this.$watch('sortByHits', () => this.calcSums(this.startNode, true))
+                },
+                toggleTools() {
+                    this.showToolsFlag = !this.showToolsFlag
+                },
+                selectSolution(letters) {
+                    const letterIndices = letters.split('').map(letter => this.letters.indexOf(letter))
+                    this.solveNode(this.startNode, letterIndices)
+                },
+                solveNode(node, letterIndices) {
+                    if (!node || letterIndices.length === 0 || node.words.length < 2) {
+                        return
+                    }
+                    const letterIndex = letterIndices[0]
+                    const restOfLetters = letterIndices.slice(1)
+                    this.selectLetter(node, letterIndex)
+                    this.solveNode(node.yesNode, restOfLetters)
+                    this.solveNode(node.noNode, restOfLetters)
                 },
                 deserializePicks(node, picked) {
                     if (picked.length === 0 || node.words.length < 2) {
@@ -209,6 +261,10 @@
                     this.listLength = this.wordBox.replace(/[^\n]/g,'').length + 2
                     const crammedWord = words.map(word => word.check).join(",")
                     if (crammedWord !== this.lastBoxCalculated) {
+                        this.scanResults = []
+                        this.scanComplete = false
+                        this.excludeLetters = ""
+                        this.includeLetters = ""
                         this.wordsKeyed = {}
                         words.forEach(word => {
                             this.wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
@@ -475,7 +531,11 @@
                         })
                     }
                     scanLevel(levels[0], 0)
-                    console.log("FOUND", options.join(", "))
+                    this.scanResults = options
+                    this.scanComplete = true
+                    if (this.scanResults.length === 1) {
+                        this.selectSolution(this.scanResults[0])
+                    }
                 }
             }))
         })
