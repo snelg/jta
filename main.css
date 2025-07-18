@@ -78,6 +78,13 @@ th.pickercol, td.pickercol {
     /* Hmm, can't figure out a clean visual indicator for now ... */
     /*background-color: #dfd;*/
 }
+.solution {
+    cursor: pointer;
+}
+.solution:hover {
+    color: blue;
+    font-weight: bold;
+}
 @media print {
     .no-print, .no-print * {
         display: none !important;

@@ -131,7 +131,7 @@
             <span x-show="scanResults.length === 0">No Results</span>
             <template x-for="(solution, index) in filteredScanResults">
                 <span>
-                    <span x-text="solution" @click.stop="selectSolution(solution)"></span><span x-show="index < filteredScanResults.length - 1">, </span>
+                    <span x-text="solution" class="solution" @click.stop="selectSolution(solution)"></span><span x-show="index < filteredScanResults.length - 1">, </span>
                 </span>
             </template>
             <div x-show="scanResults.length > 1">
