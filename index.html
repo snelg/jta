@@ -56,9 +56,6 @@
             </label>
             <br>
             <br>
-            <button x-show="showTools" @click.stop="scanPerfect">Scan for "perfect"</button>
-            <br>
-            <button x-show="showTools" @click.stop="scanSilent">Scan for "silent"</button>
         </div>
         <table x-show="startNode.words.length" :class="isVertical ? 'vert' : ''">
             <tbody>
@@ -120,14 +117,11 @@
                 </div>
             </div>
         </template>
-        <div class="no-print">
-            <br>
-            Permalink:
-            <br>
-            <a :href="permaLink" x-text="permaLink"></a>
+        <div x-show="showTools" class="no-print" style="margin: 1em 0">
+            <button x-show="showTools" @click.stop="scanPerfect">Scan for "perfect"</button>
+            <button x-show="showTools" @click.stop="scanSilent">Scan for "silent"</button>
         </div>
         <div x-show="showTools && scanComplete" class="no-print">
-            <br>
             <span x-show="scanResults.length === 0">No Results</span>
             <template x-for="(solution, index) in filteredScanResults">
                 <span>
@@ -140,6 +134,12 @@
                 <br>
                 Include letters: <input x-model="includeLetters">
             </div>
+        </div>
+        <div class="no-print">
+            <br>
+            Permalink:
+            <br>
+            <a :href="permaLink" x-text="permaLink"></a>
         </div>
     </div>
     <footer class="no-print" style="margin-top: 1em; border-top: 1px solid #888; padding: 0.5em 1em; line-height: 1.5em">
