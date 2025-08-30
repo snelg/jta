@@ -173,7 +173,7 @@
                 includeLetters: "",
                 listLength: 1,
                 lastBoxCalculated: "",
-                letters: [...Array(26).keys()].map(i => String.fromCharCode('A'.charCodeAt(0) + i)),
+                letters: [],
                 levels: [],
                 dupes: [],
                 isVertical: true,
@@ -187,8 +187,8 @@
                     return this.showToolsFlag && (this.startNode.words.length > 0)
                 },
                 get filteredScanResults() {
-                    const excludeLetterSet = new Set(this.excludeLetters.toUpperCase().replace(/[^A-Z.]/g, '').split(''))
-                    const includeLetterSet = new Set(this.includeLetters.toUpperCase().replace(/[^A-Z.]/g, '').split(''))
+                    const excludeLetterSet = new Set(this.excludeLetters.toUpperCase().replace(/[^\p{Alpha}.]/gu, '').split(''))
+                    const includeLetterSet = new Set(this.includeLetters.toUpperCase().replace(/[^\p{Alpha}.]/gu, '').split(''))
                     let filteredResults = this.scanResults
                     if (excludeLetterSet.size > 0) {
                         filteredResults = filteredResults.filter(word => (new Set(word.split(''))).intersection(excludeLetterSet).size === 0)
@@ -199,14 +199,13 @@
                     return filteredResults
                 },
                 init () {
-                    this.letterKeys = Object.keys(Alpine.raw(this.letters))
                     const urlParams = new URLSearchParams(window.location.search)
                     this.wordBox = urlParams.get('words') ?? ""
                     this.changeWordBox()
                     this.recalcTree()
                     const picks = urlParams.get('picks')
-                    if (picks && picks.toUpperCase().replace(/[^A-Z.]/g, '').length > 0) {
-                        const pickPieces = picks.toUpperCase().replace(/[^A-Z.]/g, '').split('')
+                    if (picks && picks.toUpperCase().replace(/[^\p{Alpha}.]/gu, '').length > 0) {
+                        const pickPieces = picks.toUpperCase().replace(/[^\p{Alpha}.]/gu, '').split('')
                         this.deserializePicks(this.startNode, pickPieces)
                     }
                     this.$watch('nosFirst', () => this.recalcTree())
@@ -257,7 +256,9 @@
                     this.serializePicks(node.yesNode, picks)
                 },
                 changeWordBox() {
-                    const words = this.wordBox.replace(/,/g,"\n").split("\n").map(word => ({ orig: word.trim(), check: word.toUpperCase().replace(/[^A-Z]/g, '') })).filter(word => word.check)
+                    this.letters = Array.from(new Set(this.wordBox.toUpperCase().replace(/[^\p{Alpha}]/gu, '').split(''))).sort((a,b) => a.localeCompare(b))
+                    this.letterKeys = Object.keys(Alpine.raw(this.letters))
+                    const words = this.wordBox.replace(/,/g,"\n").split("\n").map(word => ({ orig: word.trim(), check: word.toUpperCase().replace(/[^\p{Alpha}]/gu, '') })).filter(word => word.check)
                     this.listLength = this.wordBox.replace(/[^\n]/g,'').length + 2
                     const crammedWord = words.map(word => word.check).join(",")
                     if (crammedWord !== this.lastBoxCalculated) {
@@ -267,7 +268,7 @@
                         this.includeLetters = ""
                         this.wordsKeyed = {}
                         words.forEach(word => {
-                            this.wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort().join('')
+                            this.wordsKeyed[word.orig] = Array.from(new Set(word.check.split(''))).sort((a,b) => a.localeCompare(b)).join('')
                         })
                         this.lastBoxCalculated = crammedWord
                         this.startNode.words = words.map(word => word.orig)
