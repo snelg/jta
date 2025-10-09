@@ -272,6 +272,7 @@
                         })
                         this.lastBoxCalculated = crammedWord
                         this.startNode.words = words.map(word => word.orig)
+                        this.startNode.minsplit = Math.pow(2, (Math.ceil(Math.log2(words.length)) - 1))
                         this.checkDeadEnds()
                         this.calcSums(this.startNode)
                         this.deselectLetter(this.startNode)
@@ -325,14 +326,13 @@
                         node.matchSortIndex = this.letterKeys
                     }
                     const len = node.words.length
-                    const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
                     node.badLetterCount = 0
                     node.goodLetterIndices = []
                     node.colors = node.sums.map((v, i) => {
                         let color = ""
                         if (v === 0 || v === len) {
                             color = "hidecol"
-                        } else if (v > minsplit || v < (len - minsplit)) {
+                        } else if (v > node.minsplit || v < (len - node.minsplit)) {
                             node.badLetterCount++
                             color = "warning"
                             if (node.ignoreWarning || !this.hideBad) {
@@ -357,7 +357,9 @@
                     const yesWords = node.words.filter((word, wordIndex) => node.matrix[wordIndex][letterIndex])
                     const noWords = node.words.filter((word, wordIndex) => !node.matrix[wordIndex][letterIndex])
                     node.yesNode = new TNode(yesWords, node.level + 1, 'yesnode')
+                    node.yesNode.minsplit = node.minsplit / 2
                     node.noNode = new TNode(noWords, node.level + 1, 'nonode')
+                    node.noNode.minsplit = node.minsplit / 2
                     node.chosenLetter = this.letters[letterIndex]
                     this.calcSums(node.yesNode)
                     this.calcSums(node.noNode)
@@ -493,7 +495,9 @@
                                 const yesWords = node.words.filter((word, wordIndex) => node.matrix[wordIndex][letterIndex])
                                 const noWords = node.words.filter((word, wordIndex) => !node.matrix[wordIndex][letterIndex])
                                 const yesNode = new TNode(yesWords, node.level + 1, 'yesnode')
+                                yesNode.minsplit = node.minsplit / 2
                                 const noNode = new TNode(noWords, node.level + 1, 'nonode')
+                                noNode.minsplit = node.minsplit / 2
                                 calcSums(yesNode)
                                 calcSums(noNode)
                                 nextNodes.push(yesNode)
@@ -505,10 +509,6 @@
                             }
                         })
                     }
-                    function printCurrent() {
-                        const foo = levels.slice(0, levels.length - 1)
-                        return levels.slice(0, levels.length - 1).map(level => allLetters[level.currentLetterIndex]).join('')
-                    }
                     function calcSums(node) {
                         node.matrix = node.words.map(word => allLetters.map(c => wordsKeyed[word].includes(c) ? 1 : 0))
                         if (node.words.length > 0) {
@@ -519,14 +519,13 @@
                             })
                         }
                         const len = node.words.length
-                        const minsplit = Math.pow(2, (Math.ceil(Math.log2(len)) - 1))
                         node.goodLetterIndices = []
                         node.singleLetterIndices = []
                         node.sums.forEach((v, i) => {
                             if (v === 1) {
                                 node.singleLetterIndices.push(i)
                             }
-                            if (v >= (len - minsplit) && v <= minsplit) {
+                            if (v >= (len - node.minsplit) && v <= node.minsplit) {
                                 node.goodLetterIndices.push(i)
                             }
                         })
